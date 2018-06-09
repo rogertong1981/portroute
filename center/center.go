@@ -199,6 +199,9 @@ func createForwardTunnelConn(conn net.Conn) {
 				}
 				delete(tun.instances, k)
 			}
+			if tun.proxyConn == nil {
+				delete(tunnelConns, tunnelKey)
+			}
 			break
 		}
 		switch cmd {
