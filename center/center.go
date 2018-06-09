@@ -167,7 +167,7 @@ func createProxyTunnelConn(conn net.Conn) {
 func createForwardTunnelConn(conn net.Conn) {
 	tunnelKey, _ := common.ReadString(conn)
 	tun := getTunnel(&tunnelKey, conn)
-	if tun.proxyConn != conn {
+	if tun.forwardConn != conn {
 		kickForwardTunnel(tun)
 	}
 	tun.forwardConn = conn
@@ -214,12 +214,18 @@ func createProxyInstanceConn(conn net.Conn) {
 	insKey, _ := common.ReadString(conn)
 	remoteSrv, _ := common.ReadString(conn)
 
-	fmt.Printf("Instance[%s][%s]正在建立中转连接\n", insKey, remoteSrv)
+	
 	if tun, ok := tunnelConns[tunKey]; ok {
-		for tun.forwardConn == nil {
-			time.Sleep(time.Second * 1)
+		if tun.forwardConn == nil {
+			notifyMsg := fmt.Sprintf("Instance[%s][%s]正在等待对应的Forward-Tunnel接入中..", insKey, remoteSrv)
+			fmt.Println(notifyMsg)
+			sendNotify(tun.proxyConn, notifyMsg)
+			for tun.forwardConn == nil {
+				time.Sleep(time.Second * 1)
+			}
 		}
-
+		
+		fmt.Printf("Instance[%s][%s]正在建立中转连接\n", insKey, remoteSrv)
 		common.WriteByte(tun.forwardConn, common.AddForwardLink)
 		common.WriteString(tun.forwardConn, insKey)
 		common.WriteString(tun.forwardConn, remoteSrv)
