@@ -174,7 +174,7 @@ func createListen(info *listenInfo) {
 func createListens() {
 	for _, v := range linkInfos {
 		info := getListenInfo(v)
-		createListen(info)
+		go createListen(info)
 	}
 }
 
