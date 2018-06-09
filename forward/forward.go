@@ -77,6 +77,7 @@ func connectCenter(centerSrv string, tunKey string) {
 	}
 	common.WriteByte(conn, common.ForwareTunnelConn)
 	common.WriteString(conn, tunKey)
+	go common.Ping(conn)
 	if tunKey != "000000" {
 		tunnelKey = tunKey
 	}

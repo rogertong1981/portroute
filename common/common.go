@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"time"
 )
 
 const (
@@ -21,6 +22,7 @@ const (
 	SetTunnelKey          = byte(33)
 	NotifyMessage         = byte(200)
 	FwNotifyMessage       = byte(201)
+	ConnectPing			  = byte(255)
 )
 
 func int32ToBytes(i int) []byte {
@@ -69,6 +71,17 @@ func IoCopy(sconn net.Conn, dconn net.Conn, exitChan chan bool) {
 		io.Copy(dconn, sconn)
 	}
 	exitChan <- true
+}
+
+func Ping(conn net.Conn){
+	for {
+		_, err := WriteByte(conn, ConnectPing)
+		if err != nil {
+			conn.Close()
+			break
+		}
+		time.Sleep(time.Second * 2)
+	}
 }
 
 func PrintError() {

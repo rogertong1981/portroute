@@ -68,7 +68,7 @@ func getInputPort(msg string) int {
 }
 
 func getInputRemoteServer() {
-	println("请输入你需要添加的后端服务器信息")
+	fmt.Println("请输入你需要添加的后端服务器信息")
 	var serverAddr string
 	var appendNext string
 	fmt.Print("服务器地址:")
@@ -165,6 +165,8 @@ func createListens() {
 	}
 }
 
+
+
 func connectCenter(centerSrv string) {
 	conn, err := net.Dial("tcp", centerSrv)
 	if err != nil {
@@ -181,6 +183,7 @@ func connectCenter(centerSrv string) {
 
 	common.WriteByte(conn, common.ProxyTunnelConn)
 	common.WriteString(conn, tunnelKey)
+	go common.Ping(conn)
 	for {
 		cmd, err := common.ReadByte(conn)
 		if err != nil {

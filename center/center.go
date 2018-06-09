@@ -308,7 +308,8 @@ func server(portStr string) {
 			go createProxyInstanceConn(conn)
 		case common.ForwardInstanceConn:
 			go initForwardInstanceLink(conn)
-
+		case common.ConnectPing:
+			continue
 		}
 	}
 }
