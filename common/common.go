@@ -42,10 +42,10 @@ func ReadString(reader io.Reader) (string, error) {
 	if n != 4 {
 		return "", err
 	}
-	len := int(binary.LittleEndian.Uint32(lenBytes))
-	bufBytes := make([]byte, len)
+	l := int(binary.LittleEndian.Uint32(lenBytes))
+	bufBytes := make([]byte, l)
 	n, err1 := io.ReadFull(reader, bufBytes)
-	if n != len {
+	if n != l {
 		return "", err1
 	}
 	return string(bufBytes), nil
@@ -64,48 +64,15 @@ func ReadByte(reader io.Reader) (byte, error) {
 	return buf[0], nil
 }
 
-func WriteInt(writer io.Writer, v int) {
-	writer.Write(int32ToBytes(v))
-}
-
-func ReadInt(reader io.Reader) int {
-	buf := make([]byte, 4)
-	_, err := io.ReadFull(reader, buf)
-	if err != nil {
-		panic(err)
-	}
-	return int(binary.LittleEndian.Uint32(buf))
-}
-
 func IoCopy(sconn net.Conn, dconn net.Conn, exitChan chan bool) {
 	if sconn != nil && dconn != nil {
 		io.Copy(dconn, sconn)
 	}
-
-	// buf := make([]byte, 1024*5)
-	// for {
-	// 	if sconn != nil && dconn != nil {
-	// 		n, err := sconn.Read(buf)
-	// 		if err != nil {
-	// 			fmt.Println(err)
-	// 			return
-	// 		}
-	// 		fmt.Printf("IoCopy: read[%v->%v] bytes size:%v\n", sconn.RemoteAddr(), sconn.LocalAddr(), n)
-
-	// 		n, err = dconn.Write(buf[:n])
-	// 		if err != nil {
-	// 			fmt.Println(err)
-	// 			return
-	// 		}
-	// 		fmt.Printf("IoCopy: write[%v->%v] bytes size:%v\n", dconn.LocalAddr(), dconn.RemoteAddr(), n)
-	// 	}
-	// }
-
 	exitChan <- true
 }
 
 func PrintError() {
 	if err := recover(); err != nil {
-		fmt.Println(err) // 这里的err其实就是panic传入的内容，55
+		fmt.Println(err)
 	}
 }

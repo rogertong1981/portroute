@@ -319,8 +319,4 @@ func main() {
 	flag.Parse()
 
 	server(portStr)
-
-	for i := 1; i <= 10; i++ {
-		fmt.Printf("current Number:%d \n", createKey())
-	}
 }
