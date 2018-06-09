@@ -28,12 +28,10 @@ type linkInfo struct {
 type listenInfo struct {
 	key      string
 	linkInfo *linkInfo
-	// instances map[string]*instance
 }
 
-var tunnelConn net.Conn
 var tunnelKey string
-var centersrv string
+var centerSrv string
 
 var linkInfos = make(map[string]*linkInfo)
 var listenInfos = make(map[string]*listenInfo)
@@ -111,24 +109,13 @@ func getListenInfo(link *linkInfo) *listenInfo {
 }
 
 func acceptProxyInstanceConnect(conn net.Conn, link *listenInfo) {
-	// for k, v := range link.instances {
-	// 	if v.proxyConn != nil {
-	// 		v.proxyConn.Close()
-	// 	}
-	// 	if v.forwardConn != nil {
-	// 		v.forwardConn.Close()
-	// 	}
-	// 	v.exitChan <- false
-	// 	delete(link.instances, k)
-	// }
-
 	ins := &instance{}
 	ins.key = getNewInstanceKey(link)
 	ins.exitChan = make(chan bool, 1)
 	ins.proxyConn = conn
 	remoteSrv := fmt.Sprintf("%v:%v", link.linkInfo.serverAddr, link.linkInfo.serverPort)
 	fmt.Printf("正在建立Proxy-Instance[%v][%v]转发连接...\n", ins.key, remoteSrv)
-	fwConn, err := net.Dial("tcp", centersrv)
+	fwConn, err := net.Dial("tcp", centerSrv)
 	if err != nil {
 		fmt.Printf("建立Proxy-Instance[%v][%v]转发连接时出错:\n%v\n", ins.key, remoteSrv, err)
 		return
@@ -192,7 +179,6 @@ func connectCenter(centerSrv string) {
 
 	go createListens()
 
-	tunnelConn = conn
 	common.WriteByte(conn, common.ProxyTunnelConn)
 	common.WriteString(conn, tunnelKey)
 	for {
@@ -217,7 +203,7 @@ func connectCenter(centerSrv string) {
 func main() {
 	var tunKey string
 	fmt.Println("copyright by rogertong(tongbin@lonntec.com)")
-	flag.StringVar(&centersrv, "center", common.DefaultCenterSvr, "-center=<ip>:<port> 指定中央服务器的连接地址")
+	flag.StringVar(&centerSrv, "center", common.DefaultCenterSvr, "-center=<ip>:<port> 指定中央服务器的连接地址")
 	flag.StringVar(&tunKey, "tunnel", "000000", "-tunnel=<tunnelName> 指定tunnel的标识名")
 	flag.Parse()
 	tunnelKey = tunKey
@@ -226,14 +212,9 @@ func main() {
 	}
 
 	getInputRemoteServer()
-	fmt.Printf("正在连接到中央服务器[%s]\n", centersrv)
+	fmt.Printf("正在连接到中央服务器[%s]\n", centerSrv)
 
-	connectCenter(centersrv)
+	connectCenter(centerSrv)
 
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Println(err) // 这里的err其实就是panic传入的内容，55
-			time.Sleep(time.Second * 10)
-		}
-	}()
+	defer common.PrintError()
 }
