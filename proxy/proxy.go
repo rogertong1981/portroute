@@ -7,8 +7,10 @@ import (
 	"strconv"
 	"sync"
 	"time"
-
 	"portroute/common"
+	"log"
+	"os"
+	"io"
 )
 
 type instance struct {
@@ -35,6 +37,7 @@ var centerSrv string
 
 var linkInfos = make(map[string]*linkInfo)
 var listenInfos = make(map[string]*listenInfo)
+var logger *log.Logger
 var instanceKey = 100
 
 func getNewInstanceKey(link *listenInfo) string {
@@ -114,16 +117,16 @@ func acceptProxyInstanceConnect(conn net.Conn, link *listenInfo) {
 	ins.exitChan = make(chan bool, 1)
 	ins.proxyConn = conn
 	remoteSrv := fmt.Sprintf("%v:%v", link.linkInfo.serverAddr, link.linkInfo.serverPort)
-	fmt.Printf("正在建立Proxy-Instance[%v][%v]转发连接...\n", ins.key, remoteSrv)
+	logger.Printf("正在建立Proxy-Instance[%v][%v]转发连接...\n", ins.key, remoteSrv)
 	fwConn, err := net.Dial("tcp", centerSrv)
 	if err != nil {
-		fmt.Printf("建立Proxy-Instance[%v][%v]转发连接时出错:\n%v\n", ins.key, remoteSrv, err)
+		logger.Printf("建立Proxy-Instance[%v][%v]转发连接时出错:\n%v\n", ins.key, remoteSrv, err)
 		return
 	}
 	defer func() {
 		fwConn.Close()
 		conn.Close()
-		fmt.Printf("Forward-Instance[%v][%v]连接已关闭:\n", ins.key, remoteSrv)
+		logger.Printf("Forward-Instance[%v][%v]连接已关闭:\n", ins.key, remoteSrv)
 	}()
 	ins.forwardConn = fwConn
 	common.WriteByte(fwConn, common.ProxyInstanceConn)
@@ -133,7 +136,7 @@ func acceptProxyInstanceConnect(conn net.Conn, link *listenInfo) {
 	common.WriteString(fwConn, remoteSrv)
 	cmd, _ := common.ReadByte(fwConn)
 	if cmd == common.ForwardLinkSuccess {
-		fmt.Printf("Forward-Instance[%v][%v]连接已就绪:\n", ins.key, remoteSrv)
+		logger.Printf("Forward-Instance[%v][%v]连接已就绪:\n", ins.key, remoteSrv)
 		go common.IoCopy(ins.forwardConn, ins.proxyConn, ins.exitChan)
 		go common.IoCopy(ins.proxyConn, ins.forwardConn, ins.exitChan)
 		<-ins.exitChan
@@ -143,7 +146,7 @@ func acceptProxyInstanceConnect(conn net.Conn, link *listenInfo) {
 func createListen(info *listenInfo) {
 	lis, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%v", info.linkInfo.listenPort))
 	if err != nil {
-		fmt.Printf("打开本地监听端口[%v]失败：\n%v\n", info.linkInfo.listenPort, err)
+		logger.Printf("打开本地监听端口[%v]失败：\n%v\n", info.linkInfo.listenPort, err)
 		return
 	}
 	defer lis.Close()
@@ -151,7 +154,7 @@ func createListen(info *listenInfo) {
 	for {
 		conn, err := lis.Accept()
 		if err != nil {
-			fmt.Println(err)
+			logger.Println(err)
 			continue
 		}
 		go acceptProxyInstanceConnect(conn, info)
@@ -187,16 +190,16 @@ func connectCenter(centerSrv string) {
 	for {
 		cmd, err := common.ReadByte(conn)
 		if err != nil {
-			fmt.Printf("检测到中央服务器[%s]的连接已经断开，正在尝试重连...\n", centerSrv)
+			logger.Printf("检测到中央服务器[%s]的连接已经断开，正在尝试重连...\n", centerSrv)
 			connectCenter(centerSrv)
 		}
 		switch cmd {
 		case common.NotifyMessage:
 			msg, _ := common.ReadString(conn)
-			fmt.Println(msg)
+			logger.Println(msg)
 		case common.KickProxyTunnelConn:
-			fmt.Printf("有新的用户使用信道标示[%s]连接到中央服务器，你已经被踢下线!\n", tunnelKey)
-			fmt.Println("程序将在5秒后自动关闭!")
+			logger.Printf("有新的用户使用信道标示[%s]连接到中央服务器，你已经被踢下线!\n", tunnelKey)
+			logger.Println("程序将在5秒后自动关闭!")
 			time.Sleep(time.Second * 5)
 			return
 		}
@@ -204,8 +207,11 @@ func connectCenter(centerSrv string) {
 }
 
 func main() {
+	logFile, _ := os.OpenFile("proxy.log", os.O_CREATE|os.O_APPEND|os.O_RDWR, os.ModePerm|os.ModeTemporary)
+	writer:=io.MultiWriter(logFile,os.Stdout)
+	logger = log.New(writer, "", log.LstdFlags)
 	var tunKey string
-	fmt.Println("copyright by rogertong(tongbin@lonntec.com)")
+	logger.Println("copyright by rogertong(tongbin@lonntec.com)")
 	flag.StringVar(&centerSrv, "center", common.DefaultCenterSvr, "-center=<ip>:<port> 指定中央服务器的连接地址")
 	flag.StringVar(&tunKey, "tunnel", "000000", "-tunnel=<tunnelName> 指定tunnel的标识名")
 	flag.Parse()
@@ -215,7 +221,7 @@ func main() {
 	}
 
 	getInputRemoteServer()
-	fmt.Printf("正在连接到中央服务器[%s]\n", centerSrv)
+	logger.Printf("正在连接到中央服务器[%s]\n", centerSrv)
 
 	connectCenter(centerSrv)
 
