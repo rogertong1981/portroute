@@ -10,7 +10,7 @@ import (
 
 const (
 	//DefaultCenterSvr = "127.0.0.1:3600"
-	DefaultCenterSvr      = "122.152.250.74:3600"
+	DefaultCenterSvr      = "193.112.239.76:80"
 	ForwareTunnelConn     = byte(1)
 	ProxyTunnelConn       = byte(2)
 	ForwardInstanceConn   = byte(3)
@@ -22,7 +22,7 @@ const (
 	SetTunnelKey          = byte(33)
 	NotifyMessage         = byte(200)
 	FwNotifyMessage       = byte(201)
-	ConnectPing			  = byte(255)
+	ConnectPing           = byte(255)
 )
 
 func int32ToBytes(i int) []byte {
@@ -68,12 +68,15 @@ func ReadByte(reader io.Reader) (byte, error) {
 
 func IoCopy(sconn net.Conn, dconn net.Conn, exitChan chan bool) {
 	if sconn != nil && dconn != nil {
-		io.Copy(dconn, sconn)
+		_, err := io.Copy(dconn, sconn)
+		if err != nil {
+			exitChan <- true
+		}
 	}
 	exitChan <- true
 }
 
-func Ping(conn net.Conn){
+func Ping(conn net.Conn) {
 	for {
 		_, err := WriteByte(conn, ConnectPing)
 		if err != nil {
