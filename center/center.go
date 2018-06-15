@@ -217,7 +217,6 @@ func createProxyInstanceConn(conn net.Conn) {
 	insKey, _ := common.ReadString(conn)
 	remoteSrv, _ := common.ReadString(conn)
 
-	
 	if tun, ok := tunnelConns[tunKey]; ok {
 		if tun.forwardConn == nil {
 			notifyMsg := fmt.Sprintf("Instance[%s][%s]正在等待对应的Forward-Tunnel接入中..", insKey, remoteSrv)
@@ -227,7 +226,7 @@ func createProxyInstanceConn(conn net.Conn) {
 				time.Sleep(time.Second * 1)
 			}
 		}
-		
+
 		fmt.Printf("Instance[%s][%s]正在建立中转连接\n", insKey, remoteSrv)
 		common.WriteByte(tun.forwardConn, common.AddForwardLink)
 		common.WriteString(tun.forwardConn, insKey)
@@ -289,6 +288,7 @@ func server(portStr string) {
 	defer lis.Close()
 
 	for {
+		defer common.PrintError()
 		conn, err := lis.Accept()
 		if err != nil {
 			fmt.Println(err)
