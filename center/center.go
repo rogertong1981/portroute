@@ -120,13 +120,7 @@ func sendNotify(tunConn net.Conn, msg string) {
 }
 
 func createProxyTunnelConn(conn net.Conn) {
-	tunnelKey, err1 := common.ReadString(conn)
-	if err1 != nil {
-		fmt.Printf("无效的ForwardTunnel[%v]连接\n", conn.RemoteAddr())
-		conn.Close()
-		return
-	}
-
+	tunnelKey, _ := common.ReadString(conn)
 	tun := getTunnel(&tunnelKey, conn)
 	if tun.proxyConn != conn {
 		kickProxyTunnel(tun)
@@ -171,13 +165,7 @@ func createProxyTunnelConn(conn net.Conn) {
 }
 
 func createForwardTunnelConn(conn net.Conn) {
-	tunnelKey, err1 := common.ReadString(conn)
-	if err1 != nil {
-		fmt.Printf("无效的ForwardTunnel[%v]连接\n", conn.RemoteAddr())
-		conn.Close()
-		return
-	}
-
+	tunnelKey, _ := common.ReadString(conn)
 	tun := getTunnel(&tunnelKey, conn)
 	if tun.forwardConn != conn {
 		kickForwardTunnel(tun)
@@ -225,27 +213,11 @@ func createForwardTunnelConn(conn net.Conn) {
 }
 
 func createProxyInstanceConn(conn net.Conn) {
-	tunKey, err1 := common.ReadString(conn)
-	if err1 != nil {
-		fmt.Printf("无效的Instance[%v]连接\n", conn.RemoteAddr())
-		conn.Close()
-		return
-	}
+	tunKey, _ := common.ReadString(conn)
+	insKey, _ := common.ReadString(conn)
+	remoteSrv, _ := common.ReadString(conn)
 
-	insKey, err2 := common.ReadString(conn)
-	if err2 != nil {
-		fmt.Printf("无效的Instance[%v]连接\n", conn.RemoteAddr())
-		conn.Close()
-		return
-	}
-
-	remoteSrv, err3 := common.ReadString(conn)
-	if err3 != nil {
-		fmt.Printf("无效的Instance[%v]连接\n", conn.RemoteAddr())
-		conn.Close()
-		return
-	}
-
+	
 	if tun, ok := tunnelConns[tunKey]; ok {
 		if tun.forwardConn == nil {
 			notifyMsg := fmt.Sprintf("Instance[%s][%s]正在等待对应的Forward-Tunnel接入中..", insKey, remoteSrv)
@@ -255,7 +227,7 @@ func createProxyInstanceConn(conn net.Conn) {
 				time.Sleep(time.Second * 1)
 			}
 		}
-
+		
 		fmt.Printf("Instance[%s][%s]正在建立中转连接\n", insKey, remoteSrv)
 		common.WriteByte(tun.forwardConn, common.AddForwardLink)
 		common.WriteString(tun.forwardConn, insKey)
@@ -271,20 +243,8 @@ func createProxyInstanceConn(conn net.Conn) {
 }
 
 func initForwardInstanceLink(conn net.Conn) {
-	tunKey, err1 := common.ReadString(conn)
-	if err1 != nil {
-		fmt.Printf("无效的Instance[%v]连接\n", conn.RemoteAddr())
-		conn.Close()
-		return
-	}
-
-	insKey, err2 := common.ReadString(conn)
-	if err2 != nil {
-		fmt.Printf("无效的Instance[%v]连接\n", conn.RemoteAddr())
-		conn.Close()
-		return
-	}
-
+	tunKey, _ := common.ReadString(conn)
+	insKey, _ := common.ReadString(conn)
 	fmt.Printf("Instance[%s]中转连接建立已就绪\n", insKey)
 	if tun, ok := tunnelConns[tunKey]; ok {
 		if ins, ok1 := tun.instances[insKey]; ok1 {
