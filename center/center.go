@@ -288,27 +288,12 @@ func server(portStr string) {
 	defer lis.Close()
 
 	for {
-		//		defer common.PrintError()
+		defer common.PrintError()
 		conn, err := lis.Accept()
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
-
-		defer func() {
-			if err := recover(); err != nil {
-				if conn != nil {
-					fmt.Printf("检测到客户端连接已经中断[%v],连接将被关闭", conn.RemoteAddr())
-					conn.Close()
-					defer func() {
-						if err1 := recover(); err1 != nil {
-							fmt.Println(err1)
-						}
-					}()
-				}
-			}
-		}()
-
 		cmd, err := common.ReadByte(conn)
 		if err != nil {
 			fmt.Println(err)
