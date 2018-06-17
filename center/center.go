@@ -299,6 +299,8 @@ func server(portStr string) {
 			fmt.Println(err)
 			continue
 		}
+		fmt.Printf("检测到来自[%v]新的连接请求\n",conn.RemoteAddr())
+
 		cmd, err := common.ReadByte(conn)
 		switch cmd {
 		case common.ForwareTunnelConn:
@@ -312,7 +314,7 @@ func server(portStr string) {
 		case common.ConnectPing:
 			continue
 		default:
-			fmt.Printf("检测到异常连接指令[%v],连接已被断开",cmd)
+			fmt.Printf("检测到异常连接指令[%v],连接[%v]将被断开\n",cmd,conn.RemoteAddr())
 			conn.Close()
 		}
 	}
