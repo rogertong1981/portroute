@@ -75,6 +75,7 @@ func IoCopy(sconn net.Conn, dconn net.Conn, exitChan chan bool) {
 
 func Ping(conn net.Conn) {
 	for {
+		defer recover()
 		_, err := WriteByte(conn, ConnectPing)
 		if err != nil {
 			conn.Close()
