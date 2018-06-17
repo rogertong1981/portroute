@@ -128,11 +128,6 @@ func createProxyTunnelConn(conn net.Conn) {
 	}()
 
 	tunnelKey, _ := common.ReadString(conn)
-	if tunnelKey==""{
-		conn.Close()
-		return
-	}
-
 	tun := getTunnel(&tunnelKey, conn)
 	if tun.proxyConn != conn {
 		kickProxyTunnel(tun)
@@ -185,10 +180,6 @@ func createForwardTunnelConn(conn net.Conn) {
 	}()
 
 	tunnelKey, _ := common.ReadString(conn)
-	if tunnelKey==""{
-		conn.Close()
-		return
-	}
 	tun := getTunnel(&tunnelKey, conn)
 	if tun.forwardConn != conn {
 		kickForwardTunnel(tun)
@@ -244,22 +235,8 @@ func createProxyInstanceConn(conn net.Conn) {
 	}()
 
 	tunKey, _ := common.ReadString(conn)
-	if tunKey == "" {
-		conn.Close()
-		return
-	}
-
 	insKey, _ := common.ReadString(conn)
-	if insKey == "" {
-		conn.Close()
-		return
-	}
-
 	remoteSrv, _ := common.ReadString(conn)
-	if remoteSrv == "" {
-		conn.Close()
-		return
-	}
 
 	if tun, ok := tunnelConns[tunKey]; ok {
 		if tun.forwardConn == nil {
@@ -292,18 +269,9 @@ func initForwardInstanceLink(conn net.Conn) {
 			fmt.Println(err)
 		}
 	}()
+
 	tunKey, _ := common.ReadString(conn)
-	if tunKey == "" {
-		conn.Close()
-		return
-	}
-
 	insKey, _ := common.ReadString(conn)
-	if insKey == "" {
-		conn.Close()
-		return
-	}
-
 	fmt.Printf("Instance[%s]中转连接建立已就绪\n", insKey)
 	if tun, ok := tunnelConns[tunKey]; ok {
 		if ins, ok1 := tun.instances[insKey]; ok1 {
