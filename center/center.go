@@ -120,9 +120,11 @@ func sendNotify(tunConn net.Conn, msg string) {
 }
 
 func createProxyTunnelConn(conn net.Conn) {
-	defer func(){
-		conn.Close()
-		common.PrintError()
+	defer func() {
+		if err := recover(); err != nil{
+			conn.Close()
+			fmt.Println(err)
+		}
 	}()
 	tunnelKey, _ := common.ReadString(conn)
 	tun := getTunnel(&tunnelKey, conn)
@@ -169,9 +171,11 @@ func createProxyTunnelConn(conn net.Conn) {
 }
 
 func createForwardTunnelConn(conn net.Conn) {
-	defer func(){
-		conn.Close()
-		common.PrintError()
+	defer func() {
+		if err := recover(); err != nil{
+			conn.Close()
+			fmt.Println(err)
+		}
 	}()
 
 	tunnelKey, _ := common.ReadString(conn)
@@ -222,9 +226,11 @@ func createForwardTunnelConn(conn net.Conn) {
 }
 
 func createProxyInstanceConn(conn net.Conn) {
-	defer func(){
-		conn.Close()
-		common.PrintError()
+	defer func() {
+		if err := recover(); err != nil{
+			conn.Close()
+			fmt.Println(err)
+		}
 	}()
 	tunKey, _ := common.ReadString(conn)
 	insKey, _ := common.ReadString(conn)
@@ -255,9 +261,11 @@ func createProxyInstanceConn(conn net.Conn) {
 }
 
 func initForwardInstanceLink(conn net.Conn) {
-	defer func(){
-		conn.Close()
-		common.PrintError()
+	defer func() {
+		if err := recover(); err != nil{
+			conn.Close()
+			fmt.Println(err)
+		}
 	}()
 	tunKey, _ := common.ReadString(conn)
 	insKey, _ := common.ReadString(conn)
