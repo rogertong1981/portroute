@@ -120,6 +120,10 @@ func sendNotify(tunConn net.Conn, msg string) {
 }
 
 func createProxyTunnelConn(conn net.Conn) {
+	defer func(){
+		conn.Close()
+		common.PrintError()
+	}()
 	tunnelKey, _ := common.ReadString(conn)
 	tun := getTunnel(&tunnelKey, conn)
 	if tun.proxyConn != conn {
@@ -165,6 +169,11 @@ func createProxyTunnelConn(conn net.Conn) {
 }
 
 func createForwardTunnelConn(conn net.Conn) {
+	defer func(){
+		conn.Close()
+		common.PrintError()
+	}()
+
 	tunnelKey, _ := common.ReadString(conn)
 	tun := getTunnel(&tunnelKey, conn)
 	if tun.forwardConn != conn {
@@ -213,6 +222,10 @@ func createForwardTunnelConn(conn net.Conn) {
 }
 
 func createProxyInstanceConn(conn net.Conn) {
+	defer func(){
+		conn.Close()
+		common.PrintError()
+	}()
 	tunKey, _ := common.ReadString(conn)
 	insKey, _ := common.ReadString(conn)
 	remoteSrv, _ := common.ReadString(conn)
@@ -242,6 +255,10 @@ func createProxyInstanceConn(conn net.Conn) {
 }
 
 func initForwardInstanceLink(conn net.Conn) {
+	defer func(){
+		conn.Close()
+		common.PrintError()
+	}()
 	tunKey, _ := common.ReadString(conn)
 	insKey, _ := common.ReadString(conn)
 	fmt.Printf("Instance[%s]中转连接建立已就绪\n", insKey)
