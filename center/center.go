@@ -288,17 +288,18 @@ func server(portStr string) {
 	defer lis.Close()
 
 	for {
-		defer common.PrintError()
 		conn, err := lis.Accept()
+		defer func() {
+			common.PrintError()
+			if conn != nil {
+				conn.Close()
+			}
+		}()
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
 		cmd, err := common.ReadByte(conn)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
 		switch cmd {
 		case common.ForwareTunnelConn:
 			go createForwardTunnelConn(conn)
@@ -310,6 +311,8 @@ func server(portStr string) {
 			go initForwardInstanceLink(conn)
 		case common.ConnectPing:
 			continue
+		default:
+			conn.Close()
 		}
 	}
 }
