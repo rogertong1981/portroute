@@ -181,7 +181,12 @@ func createForwardTunnelConn(conn net.Conn) {
 	}()
 
 	go common.Ping(conn)
-	tunnelKey, _ := common.ReadString(conn)
+	tunnelKey, err1 := common.ReadString(conn)
+	if err1 != nil {
+		conn.Close()
+		return 
+	}
+
 	tun := getTunnel(&tunnelKey, conn)
 	if tun.forwardConn != conn {
 		kickForwardTunnel(tun)
