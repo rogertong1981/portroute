@@ -339,6 +339,7 @@ func server(portStr string) {
 		fmt.Printf("检测到来自[%v]新的连接请求\n", conn.RemoteAddr())
 
 		go func() {
+			defer recover()
 			cmd, _ := common.ReadByte(conn)
 			switch cmd {
 			case common.ForwareTunnelConn:
