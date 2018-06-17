@@ -312,6 +312,7 @@ func server(portStr string) {
 		case common.ConnectPing:
 			continue
 		default:
+			fmt.Printf("检测到异常连接指令[%v],连接已被断开",cmd)
 			conn.Close()
 		}
 	}
