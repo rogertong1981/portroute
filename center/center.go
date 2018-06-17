@@ -175,17 +175,15 @@ func createProxyTunnelConn(conn net.Conn) {
 func createForwardTunnelConn(conn net.Conn) {
 	defer func() {
 		if err := recover(); err != nil{
-			fmt.Println(err)
+			if conn!=nil {
+				conn.Close()
+				fmt.Println(err)
+			}
 		}
 	}()
 
 	go common.Ping(conn)
-	tunnelKey, err1 := common.ReadString(conn)
-	if err1 != nil {
-		conn.Close()
-		return
-	}
-
+	tunnelKey, _ := common.ReadString(conn)
 	tun := getTunnel(&tunnelKey, conn)
 	if tun.forwardConn != conn {
 		kickForwardTunnel(tun)
