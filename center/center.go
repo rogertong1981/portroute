@@ -126,7 +126,13 @@ func createProxyTunnelConn(conn net.Conn) {
 			fmt.Println(err)
 		}
 	}()
+
 	tunnelKey, _ := common.ReadString(conn)
+	if tunnelKey==""{
+		conn.Close()
+		return
+	}
+
 	tun := getTunnel(&tunnelKey, conn)
 	if tun.proxyConn != conn {
 		kickProxyTunnel(tun)
@@ -179,6 +185,10 @@ func createForwardTunnelConn(conn net.Conn) {
 	}()
 
 	tunnelKey, _ := common.ReadString(conn)
+	if tunnelKey==""{
+		conn.Close()
+		return
+	}
 	tun := getTunnel(&tunnelKey, conn)
 	if tun.forwardConn != conn {
 		kickForwardTunnel(tun)
@@ -232,9 +242,24 @@ func createProxyInstanceConn(conn net.Conn) {
 			fmt.Println(err)
 		}
 	}()
+
 	tunKey, _ := common.ReadString(conn)
+	if tunKey == "" {
+		conn.Close()
+		return
+	}
+
 	insKey, _ := common.ReadString(conn)
+	if insKey == "" {
+		conn.Close()
+		return
+	}
+
 	remoteSrv, _ := common.ReadString(conn)
+	if remoteSrv == "" {
+		conn.Close()
+		return
+	}
 
 	if tun, ok := tunnelConns[tunKey]; ok {
 		if tun.forwardConn == nil {
@@ -262,13 +287,23 @@ func createProxyInstanceConn(conn net.Conn) {
 
 func initForwardInstanceLink(conn net.Conn) {
 	defer func() {
-		if err := recover(); err != nil{
+		if err := recover(); err != nil {
 			conn.Close()
 			fmt.Println(err)
 		}
 	}()
 	tunKey, _ := common.ReadString(conn)
+	if tunKey == "" {
+		conn.Close()
+		return
+	}
+
 	insKey, _ := common.ReadString(conn)
+	if insKey == "" {
+		conn.Close()
+		return
+	}
+
 	fmt.Printf("Instance[%s]中转连接建立已就绪\n", insKey)
 	if tun, ok := tunnelConns[tunKey]; ok {
 		if ins, ok1 := tun.instances[insKey]; ok1 {
@@ -324,7 +359,7 @@ func server(portStr string) {
 			fmt.Println(err)
 			continue
 		}
-		fmt.Printf("检测到来自[%v]新的连接请求\n",conn.RemoteAddr())
+		fmt.Printf("检测到来自[%v]新的连接请求\n", conn.RemoteAddr())
 
 		cmd, err := common.ReadByte(conn)
 		switch cmd {
@@ -339,7 +374,7 @@ func server(portStr string) {
 		case common.ConnectPing:
 			continue
 		default:
-			fmt.Printf("检测到异常连接指令[%v],连接[%v]将被断开\n",cmd,conn.RemoteAddr())
+			fmt.Printf("检测到异常连接指令[%v],连接[%v]将被断开\n", cmd, conn.RemoteAddr())
 			conn.Close()
 		}
 	}
