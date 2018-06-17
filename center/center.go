@@ -127,6 +127,7 @@ func createProxyTunnelConn(conn net.Conn) {
 		}
 	}()
 
+	go common.Ping(conn)
 	tunnelKey, _ := common.ReadString(conn)
 	tun := getTunnel(&tunnelKey, conn)
 	if tun.proxyConn != conn {
@@ -179,6 +180,7 @@ func createForwardTunnelConn(conn net.Conn) {
 		}
 	}()
 
+	go common.Ping(conn)
 	tunnelKey, _ := common.ReadString(conn)
 	tun := getTunnel(&tunnelKey, conn)
 	if tun.forwardConn != conn {
