@@ -317,34 +317,39 @@ func server(portStr string) {
 
 	for {
 		conn, err := lis.Accept()
+		if err != nil {
+			fmt.Println(err)
+			if conn!=nil {
+				conn.Close()
+			}
+			continue
+		}
+
 		defer func() {
 			common.PrintError()
 			if conn != nil {
 				conn.Close()
 			}
 		}()
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
+
 		fmt.Printf("检测到来自[%v]新的连接请求\n", conn.RemoteAddr())
 
-		cmd, err := common.ReadByte(conn)
-		switch cmd {
-		case common.ForwareTunnelConn:
-			go createForwardTunnelConn(conn)
-		case common.ProxyTunnelConn:
-			go createProxyTunnelConn(conn)
-		case common.ProxyInstanceConn:
-			go createProxyInstanceConn(conn)
-		case common.ForwardInstanceConn:
-			go initForwardInstanceLink(conn)
-		case common.ConnectPing:
-			continue
-		default:
-			fmt.Printf("检测到异常连接指令[%v],连接[%v]将被断开\n", cmd, conn.RemoteAddr())
-			conn.Close()
-		}
+		go func() {
+			cmd, _ := common.ReadByte(conn)
+			switch cmd {
+			case common.ForwareTunnelConn:
+				go createForwardTunnelConn(conn)
+			case common.ProxyTunnelConn:
+				go createProxyTunnelConn(conn)
+			case common.ProxyInstanceConn:
+				go createProxyInstanceConn(conn)
+			case common.ForwardInstanceConn:
+				go initForwardInstanceLink(conn)
+			default:
+				fmt.Printf("检测到异常连接指令[%v],连接[%v]将被断开\n", cmd, conn.RemoteAddr())
+				conn.Close()
+			}
+		}()
 	}
 }
 
