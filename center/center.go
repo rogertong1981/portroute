@@ -53,7 +53,7 @@ func getTunnel(key *string, conn net.Conn) *tunnel {
 	var m sync.Mutex
 	m.Lock()
 	defer m.Unlock()
-	if *key == "000000" {
+	if len(*key)<3 || *key == "000000" {
 		*key = strconv.Itoa(createKey())
 		common.WriteByte(conn, common.SetTunnelKey)
 		common.WriteString(conn, *key)
