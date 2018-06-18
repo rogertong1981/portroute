@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -39,6 +40,9 @@ func WriteString(writer io.Writer, str string) {
 }
 
 func ReadString(reader io.Reader) (string, error) {
+	if reader == nil {
+		return "", errors.New("reader is nil")
+	}
 	lenBytes := make([]byte, 4)
 	n, err := io.ReadFull(reader, lenBytes)
 	if n != 4 {
@@ -54,10 +58,16 @@ func ReadString(reader io.Reader) (string, error) {
 }
 
 func WriteByte(writer io.Writer, v byte) (int, error) {
+	if writer == nil {
+		return 0, errors.New("writer is nil")
+	}
 	return writer.Write([]byte{v})
 }
 
 func ReadByte(reader io.Reader) (byte, error) {
+	if reader == nil {
+		return 0, errors.New("reader is nil")
+	}
 	buf := make([]byte, 1)
 	_, err := io.ReadFull(reader, buf)
 	if err != nil {
@@ -74,8 +84,11 @@ func IoCopy(sconn net.Conn, dconn net.Conn, exitChan chan bool) {
 }
 
 func Ping(conn net.Conn) {
-	defer recover()
 	for {
+		if conn == nil {
+			return
+		}
+
 		_, err := WriteByte(conn, ConnectPing)
 		if err != nil {
 			conn.Close()

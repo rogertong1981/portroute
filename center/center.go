@@ -53,7 +53,7 @@ func getTunnel(key *string, conn net.Conn) *tunnel {
 	var m sync.Mutex
 	m.Lock()
 	defer m.Unlock()
-	if len(*key)<3 || *key == "000000" {
+	if len(*key) < 3 || *key == "000000" {
 		*key = strconv.Itoa(createKey())
 		common.WriteByte(conn, common.SetTunnelKey)
 		common.WriteString(conn, *key)
@@ -121,7 +121,7 @@ func sendNotify(tunConn net.Conn, msg string) {
 
 func createProxyTunnelConn(conn net.Conn) {
 	defer func() {
-		if err := recover(); err != nil{
+		if err := recover(); err != nil {
 			conn.Close()
 			fmt.Println(err)
 		}
@@ -174,15 +174,15 @@ func createProxyTunnelConn(conn net.Conn) {
 
 func createForwardTunnelConn(conn net.Conn) {
 	defer func() {
-		if err := recover(); err != nil{
-			if conn!=nil {
+		if err := recover(); err != nil {
+			if conn != nil {
 				conn.Close()
-				fmt.Println(err)
 			}
+			fmt.Println(err)
 		}
 	}()
 
-	//go common.Ping(conn)
+	go common.Ping(conn)
 	tunnelKey, _ := common.ReadString(conn)
 	tun := getTunnel(&tunnelKey, conn)
 	if tun.forwardConn != conn {
@@ -232,7 +232,7 @@ func createForwardTunnelConn(conn net.Conn) {
 
 func createProxyInstanceConn(conn net.Conn) {
 	defer func() {
-		if err := recover(); err != nil{
+		if err := recover(); err != nil {
 			conn.Close()
 			fmt.Println(err)
 		}
@@ -323,23 +323,15 @@ func server(portStr string) {
 		conn, err := lis.Accept()
 		if err != nil {
 			fmt.Println(err)
-			if conn!=nil {
+			if conn != nil {
 				conn.Close()
 			}
 			continue
 		}
 
-		defer func() {
-			common.PrintError()
-			if conn != nil {
-				conn.Close()
-			}
-		}()
-
 		fmt.Printf("检测到来自[%v]新的连接请求\n", conn.RemoteAddr())
 
 		go func() {
-			defer recover()
 			cmd, _ := common.ReadByte(conn)
 			switch cmd {
 			case common.ForwareTunnelConn:
@@ -364,4 +356,5 @@ func main() {
 	flag.Parse()
 
 	server(portStr)
+	common.PrintError()
 }
