@@ -122,12 +122,14 @@ func sendNotify(tunConn net.Conn, msg string) {
 func createProxyTunnelConn(conn net.Conn) {
 	defer func() {
 		if err := recover(); err != nil {
-			conn.Close()
+			if conn != nil {
+				conn.Close()
+			}
 			fmt.Println(err)
 		}
 	}()
 
-	go common.Ping(conn)
+	//go common.Ping(conn)
 	tunnelKey, _ := common.ReadString(conn)
 	tun := getTunnel(&tunnelKey, conn)
 	if tun.proxyConn != conn {
@@ -188,7 +190,7 @@ func createForwardTunnelConn(conn net.Conn) {
 		}
 	}()
 
-	//go common.Ping(conn)
+	go common.Ping(conn)
 	tunnelKey, _ := common.ReadString(conn)
 	tun := getTunnel(&tunnelKey, conn)
 	if tun.forwardConn != conn {
@@ -245,7 +247,9 @@ func createForwardTunnelConn(conn net.Conn) {
 func createProxyInstanceConn(conn net.Conn) {
 	defer func() {
 		if err := recover(); err != nil {
-			conn.Close()
+			if conn != nil {
+				conn.Close()
+			}
 			fmt.Println(err)
 		}
 	}()
@@ -281,7 +285,9 @@ func createProxyInstanceConn(conn net.Conn) {
 func initForwardInstanceLink(conn net.Conn) {
 	defer func() {
 		if err := recover(); err != nil {
-			conn.Close()
+			if conn != nil {
+				conn.Close()
+			}
 			fmt.Println(err)
 		}
 	}()
@@ -329,6 +335,7 @@ func server(portStr string) {
 	}
 	fmt.Println("copyright by rogertong(tongbin@lonntec.com)")
 	fmt.Printf("PortRouter中央服务已启动[%v]\n", lis.Addr())
+	defer common.PrintError()
 	defer lis.Close()
 
 	for {
@@ -343,22 +350,20 @@ func server(portStr string) {
 
 		fmt.Printf("检测到来自[%v]新的连接请求\n", conn.RemoteAddr())
 
-		go func() {
-			cmd, _ := common.ReadByte(conn)
-			switch cmd {
-			case common.ForwareTunnelConn:
-				go createForwardTunnelConn(conn)
-			case common.ProxyTunnelConn:
-				go createProxyTunnelConn(conn)
-			case common.ProxyInstanceConn:
-				go createProxyInstanceConn(conn)
-			case common.ForwardInstanceConn:
-				go initForwardInstanceLink(conn)
-			default:
-				fmt.Printf("检测到异常连接指令[%v],连接[%v]将被断开\n", cmd, conn.RemoteAddr())
-				conn.Close()
-			}
-		}()
+		cmd, _ := common.ReadByte(conn)
+		switch cmd {
+		case common.ForwareTunnelConn:
+			go createForwardTunnelConn(conn)
+		case common.ProxyTunnelConn:
+			go createProxyTunnelConn(conn)
+		case common.ProxyInstanceConn:
+			go createProxyInstanceConn(conn)
+		case common.ForwardInstanceConn:
+			go initForwardInstanceLink(conn)
+		default:
+			fmt.Printf("检测到异常连接指令[%v],连接[%v]将被断开\n", cmd, conn.RemoteAddr())
+			conn.Close()
+		}
 	}
 }
 
