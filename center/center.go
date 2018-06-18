@@ -167,6 +167,12 @@ func createProxyTunnelConn(conn net.Conn) {
 		switch cmd {
 		case common.FwNotifyMessage:
 			sendFwNotifyMessage(conn)
+		case common.ConnectPing:
+			continue
+		default:
+			if conn != nil {
+				conn.Close()
+			}
 		}
 		runtime.Gosched()
 	}
@@ -182,7 +188,7 @@ func createForwardTunnelConn(conn net.Conn) {
 		}
 	}()
 
-	go common.Ping(conn)
+	//go common.Ping(conn)
 	tunnelKey, _ := common.ReadString(conn)
 	tun := getTunnel(&tunnelKey, conn)
 	if tun.forwardConn != conn {
@@ -225,6 +231,12 @@ func createForwardTunnelConn(conn net.Conn) {
 		switch cmd {
 		case common.FwNotifyMessage:
 			sendFwNotifyMessage(conn)
+		case common.ConnectPing:
+			continue
+		default:
+			if conn != nil {
+				conn.Close()
+			}
 		}
 		runtime.Gosched()
 	}
