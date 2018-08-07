@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"io"
+	"sync"
 )
 
 type instance struct {
@@ -23,6 +24,13 @@ type instance struct {
 var tunnelKey string
 var instances = make(map[string]*instance)
 var logger *log.Logger
+var deleteLock sync.Mutex;
+
+func deleteIns(key string)  {
+	deleteLock.Lock()
+	defer deleteLock.Unlock()
+	delete(instances, key)
+}
 
 func sendFwNotify(tunConn net.Conn, notifyMsg string) {
 	common.WriteByte(tunConn, common.FwNotifyMessage)
@@ -43,7 +51,7 @@ func createInstance(centerSrv string, tunConn net.Conn, ins *instance) {
 	defer func() {
 		common.PrintError()
 		remoteConn.Close()
-		delete(instances, ins.key)
+		deleteIns(ins.key)
 	}()
 
 	centerConn, err1 := net.Dial("tcp", centerSrv)
@@ -55,7 +63,7 @@ func createInstance(centerSrv string, tunConn net.Conn, ins *instance) {
 	defer func() {
 		common.PrintError()
 		centerConn.Close()
-		delete(instances, ins.key)
+		deleteIns(ins.key)
 		logger.Printf("Instance[%v][%v]连接关闭:\n", ins.key, ins.remoteSrv)
 	}()
 
@@ -107,7 +115,7 @@ func connectCenter(centerSrv string, tunKey string) {
 		case common.AddForwardLink:
 			insKey, _ := common.ReadString(conn)
 			remoteSrv, _ := common.ReadString(conn)
-			delete(instances, insKey)
+			deleteIns(insKey)
 			ins := &instance{}
 			ins.key = insKey
 			ins.remoteSrv = remoteSrv
