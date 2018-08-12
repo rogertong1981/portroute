@@ -152,17 +152,18 @@ func createProxyTunnelConn(conn net.Conn) {
 			conn.Close()
 			if tun.proxyConn == conn {
 				tun.proxyConn = nil
-			}
-			for k, v := range tun.instances {
-				if v.forwardConn != nil {
-					v.forwardConn.Close()
-					v.forwardConn = nil
+
+				for k, v := range tun.instances {
+					if v.forwardConn != nil {
+						v.forwardConn.Close()
+						v.forwardConn = nil
+					}
+					if v.proxyConn != nil {
+						v.proxyConn.Close()
+						v.proxyConn = nil
+					}
+					delete(tun.instances, k)
 				}
-				if v.proxyConn != nil {
-					v.proxyConn.Close()
-					v.proxyConn = nil
-				}
-				delete(tun.instances, k)
 			}
 			break
 		}
@@ -213,20 +214,22 @@ func createForwardTunnelConn(conn net.Conn) {
 			conn.Close()
 			if tun.forwardConn == conn {
 				tun.forwardConn = nil
-			}
-			for k, v := range tun.instances {
-				if v.forwardConn != nil {
-					v.forwardConn.Close()
-					v.forwardConn = nil
+
+				for k, v := range tun.instances {
+					if v.forwardConn != nil {
+						v.forwardConn.Close()
+						v.forwardConn = nil
+					}
+					if v.proxyConn != nil {
+						v.proxyConn.Close()
+						v.proxyConn = nil
+					}
+					delete(tun.instances, k)
 				}
-				if v.proxyConn != nil {
-					v.proxyConn.Close()
-					v.proxyConn = nil
+
+				if tun.proxyConn == nil {
+					delete(tunnelConns, tunnelKey)
 				}
-				delete(tun.instances, k)
-			}
-			if tun.proxyConn == nil {
-				delete(tunnelConns, tunnelKey)
 			}
 			break
 		}
