@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"portroute/common"
+	"strings"
 )
 
 type instance struct {
@@ -53,7 +54,7 @@ func getTunnel(key *string, conn net.Conn) *tunnel {
 	var m sync.Mutex
 	m.Lock()
 	defer m.Unlock()
-	if len(*key) < 3 || *key == "000000" {
+	if len(*key) < 3 || *key == "000000" || strings.TrimSpace(*key) == "" {
 		*key = strconv.Itoa(createKey())
 		common.WriteByte(conn, common.SetTunnelKey)
 		common.WriteString(conn, *key)
