@@ -262,6 +262,11 @@ func createProxyInstanceConn(conn net.Conn) {
 	insKey, _ := common.ReadString(conn)
 	remoteSrv, _ := common.ReadString(conn)
 
+	if strings.TrimSpace(insKey)=="" {
+		fmt.Printf("检测到异常的中转连接请求,连接[%v]将被断开\n", conn.RemoteAddr())
+		conn.Close()
+		return
+	}
 	if tun, ok := tunnelConns[tunKey]; ok {
 		if tun.forwardConn == nil {
 			notifyMsg := fmt.Sprintf("Instance[%s][%s]正在等待对应的Forward-Tunnel接入中..", insKey, remoteSrv)
@@ -298,6 +303,11 @@ func initForwardInstanceLink(conn net.Conn) {
 
 	tunKey, _ := common.ReadString(conn)
 	insKey, _ := common.ReadString(conn)
+	if strings.TrimSpace(insKey)=="" {
+		fmt.Printf("检测到异常的中转连接请求,连接[%v]将被断开\n", conn.RemoteAddr())
+		conn.Close()
+		return
+	}
 	fmt.Printf("Instance[%s]中转连接建立已就绪\n", insKey)
 	if tun, ok := tunnelConns[tunKey]; ok {
 		if ins, ok1 := tun.instances[insKey]; ok1 {
