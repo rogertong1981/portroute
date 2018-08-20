@@ -49,6 +49,9 @@ func ReadString(reader io.Reader) (string, error) {
 		return "", err
 	}
 	l := int(binary.LittleEndian.Uint32(lenBytes))
+	if l>65535 {
+		return "", errors.New("读取字符串出错，字符串宽度必须小于65535");
+	}
 	bufBytes := make([]byte, l)
 	n, err1 := io.ReadFull(reader, bufBytes)
 	if n != l {
