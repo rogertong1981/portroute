@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 	"portroute/common"
@@ -34,6 +35,8 @@ type listenInfo struct {
 
 var tunnelKey string
 var centerSrv string
+type arrayFlags []string
+var remoteAddrs arrayFlags
 
 var linkInfos = make(map[string]*linkInfo)
 var listenInfos = make(map[string]*listenInfo)
@@ -70,14 +73,7 @@ func getInputPort(msg string) int {
 	return v
 }
 
-func getInputRemoteServer() {
-	fmt.Println("请输入你需要添加的后端服务器信息")
-	var serverAddr string
-	var appendNext string
-	fmt.Print("服务器地址:")
-	fmt.Scanln(&serverAddr)
-	serverPort := getInputPort("服务器端口号:")
-	listenPort := getInputPort("本地监听端口号:")
+func AppendLinkInfo(serverAddr string,serverPort int,listenPort int)  {
 	key := fmt.Sprintf("%v-%v", tunnelKey, listenPort)
 	if info, ok := linkInfos[key]; !ok {
 		var m sync.Mutex
@@ -90,11 +86,53 @@ func getInputRemoteServer() {
 		info.serverPort = serverPort
 		linkInfos[key] = info
 	}
+}
+
+func getInputRemoteServer() {
+	fmt.Println("请输入你需要添加的后端服务器信息")
+	var serverAddr string
+	var appendNext string
+	fmt.Print("服务器地址:")
+	fmt.Scanln(&serverAddr)
+	serverPort := getInputPort("服务器端口号:")
+	listenPort := getInputPort("本地监听端口号:")
+	AppendLinkInfo(serverAddr, serverPort, listenPort)
+	//if info, ok := linkInfos[key]; !ok {
+	//	var m sync.Mutex
+	//	m.Lock()
+	//	defer m.Unlock()
+	//	info = &linkInfo{}
+	//	info.key = key
+	//	info.listenPort = listenPort
+	//	info.serverAddr = serverAddr
+	//	info.serverPort = serverPort
+	//	linkInfos[key] = info
+	//}
 
 	fmt.Print("是否还需要添加后端服务器？(y/n)")
 	fmt.Scanln(&appendNext)
 	if appendNext == "y" || appendNext == "Y" {
 		getInputRemoteServer()
+	}
+}
+
+func getRemoteServerFromFlag() {
+	for _, v := range remoteAddrs {
+		strs := strings.Split(v, ":")
+		if len(strs) != 3 {
+			continue
+		}
+		serverAddr := strs[0]
+		serverPortStr := strs[1]
+		listenPortStr := strs[2]
+
+		serverPort, e1 := strconv.Atoi(serverPortStr)
+		listenPort, e2 := strconv.Atoi(listenPortStr)
+		if e1 != nil || e2 != nil || (serverPort < 1 || serverPort > 65535) || (listenPort < 1 || listenPort > 65535) {
+			logger.Printf("指定的远程服务器无效：%s", v)
+			continue
+		}
+		AppendLinkInfo(serverAddr, serverPort, listenPort)
 	}
 }
 
@@ -206,6 +244,17 @@ func connectCenter(centerSrv string) {
 	}
 }
 
+func (i *arrayFlags) String() string {
+	return fmt.Sprint(*i)
+}
+
+// Set 方法是flag.Value接口, 设置flag Value的方法.
+// 通过多个flag指定的值， 所以我们追加到最终的数组上.
+func (i *arrayFlags) Set(value string) error {
+	*i = append(*i, value)
+	return nil
+}
+
 func main() {
 	logFile, _ := os.OpenFile("proxy.log", os.O_CREATE|os.O_APPEND|os.O_RDWR, os.ModePerm|os.ModeTemporary)
 	writer:=io.MultiWriter(logFile,os.Stdout)
@@ -214,13 +263,17 @@ func main() {
 	logger.Println("copyright by rogertong(tongbin@lonntec.com)")
 	flag.StringVar(&centerSrv, "center", common.DefaultCenterSvr, "-center=<ip>:<port> 指定中央服务器的连接地址")
 	flag.StringVar(&tunKey, "tunnel", "000000", "-tunnel=<tunnelName> 指定tunnel的标识名")
+	flag.Var(&remoteAddrs,"remotes","-remotes=<ipaddr:port ipaddr:port> 指定需要连接的远程服务器地址,本参数可以重复使用")
 	flag.Parse()
 	tunnelKey = tunKey
 	if tunnelKey == "000000" {
 		tunnelKey = getInputTunnelKey()
 	}
 
-	getInputRemoteServer()
+	getRemoteServerFromFlag()
+	if len(linkInfos)<=0 {
+		getInputRemoteServer()
+	}
 	logger.Printf("正在连接到中央服务器[%s]\n", centerSrv)
 
 	connectCenter(centerSrv)
