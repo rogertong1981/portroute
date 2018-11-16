@@ -3,15 +3,15 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
+	"log"
 	"net"
+	"os"
+	"portroute/common"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
-	"portroute/common"
-	"log"
-	"os"
-	"io"
 )
 
 type instance struct {
@@ -35,7 +35,9 @@ type listenInfo struct {
 
 var tunnelKey string
 var centerSrv string
+
 type arrayFlags []string
+
 var remoteAddrs arrayFlags
 
 var linkInfos = make(map[string]*linkInfo)
@@ -73,7 +75,7 @@ func getInputPort(msg string) int {
 	return v
 }
 
-func AppendLinkInfo(serverAddr string,serverPort int,listenPort int)  {
+func appendLinkInfo(serverAddr string, serverPort int, listenPort int) {
 	key := fmt.Sprintf("%v-%v", tunnelKey, listenPort)
 	if info, ok := linkInfos[key]; !ok {
 		var m sync.Mutex
@@ -96,7 +98,7 @@ func getInputRemoteServer() {
 	fmt.Scanln(&serverAddr)
 	serverPort := getInputPort("服务器端口号:")
 	listenPort := getInputPort("本地监听端口号:")
-	AppendLinkInfo(serverAddr, serverPort, listenPort)
+	appendLinkInfo(serverAddr, serverPort, listenPort)
 	//if info, ok := linkInfos[key]; !ok {
 	//	var m sync.Mutex
 	//	m.Lock()
@@ -132,7 +134,7 @@ func getRemoteServerFromFlag() {
 			logger.Printf("指定的远程服务器无效：%s", v)
 			continue
 		}
-		AppendLinkInfo(serverAddr, serverPort, listenPort)
+		appendLinkInfo(serverAddr, serverPort, listenPort)
 	}
 }
 
@@ -206,8 +208,6 @@ func createListens() {
 	}
 }
 
-
-
 func connectCenter(centerSrv string) {
 	conn, err := net.Dial("tcp", centerSrv)
 	if err != nil {
@@ -257,13 +257,13 @@ func (i *arrayFlags) Set(value string) error {
 
 func main() {
 	logFile, _ := os.OpenFile("proxy.log", os.O_CREATE|os.O_APPEND|os.O_RDWR, os.ModePerm|os.ModeTemporary)
-	writer:=io.MultiWriter(logFile,os.Stdout)
+	writer := io.MultiWriter(logFile, os.Stdout)
 	logger = log.New(writer, "", log.LstdFlags)
 	var tunKey string
 	logger.Println("copyright by rogertong(tongbin@lonntec.com)")
 	flag.StringVar(&centerSrv, "center", common.DefaultCenterSvr, "-center=<ip>:<port> 指定中央服务器的连接地址")
 	flag.StringVar(&tunKey, "tunnel", "000000", "-tunnel=<tunnelName> 指定tunnel的标识名")
-	flag.Var(&remoteAddrs,"remotes","-remotes=<ipaddr:port ipaddr:port> 指定需要连接的远程服务器地址,本参数可以重复使用")
+	flag.Var(&remoteAddrs, "remote", "-remote=<remote_ipaddr:remote_port:local_listenPort> 指定需要连接的远程服务器地址,本参数可以重复使用")
 	flag.Parse()
 	tunnelKey = tunKey
 	if tunnelKey == "000000" {
@@ -271,7 +271,7 @@ func main() {
 	}
 
 	getRemoteServerFromFlag()
-	if len(linkInfos)<=0 {
+	if len(linkInfos) <= 0 {
 		getInputRemoteServer()
 	}
 	logger.Printf("正在连接到中央服务器[%s]\n", centerSrv)
